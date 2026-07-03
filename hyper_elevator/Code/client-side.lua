@@ -1,8 +1,8 @@
----@diagnostic disable: param-type-mismatch
+---@diagnostic disable: param-type-mismatch, undefined-global
 local ESX = exports['es_extended']:getSharedObject()
 
 local isElevatorOpen = false
-local currentlyElevatorKey = nil
+local currentElevatorKey = nil
 
 --#region Teleport
 local function TeleportToFloor(elevatorKey, floor)
@@ -11,13 +11,15 @@ local function TeleportToFloor(elevatorKey, floor)
 
     if IsEntityDead(ped) then
         if Config.UseCustomNotify then
-            Config.Notify(false, nil, Config.Languagues["notify_title"], Config.Languagues["dead"], Config.Languagues["error_type"], Config.Languagues["dead_notify_duration"])
+            Config.Notify(Config.Languagues["notify_title"], Config.Languagues["dead"], Config.Languagues["error_type"], Config.Languagues["dead_notify_duration"])
         else
-            lib.notify({
-                title = Config.Languagues["notify_title"],
-                description = Config.Languagues["dead"],
-                type = "error"
-            })
+            if Config.UseLib then
+                lib.notify({
+                    title = Config.Languagues["notify_title"],
+                    description = Config.Languagues["dead"],
+                    type = "error"
+                })
+            end
         end
         return
     end
@@ -29,13 +31,15 @@ local function TeleportToFloor(elevatorKey, floor)
 
     if IsPedInAnyVehicle(ped, false) and not allowVehicle then
         if Config.UseCustomNotify then
-            Config.Notify(false, nil, Config.Languagues["notify_title"], Config.Languagues["vehicle"], Config.Languagues["error_type"], Config.Languagues["vehicle_notify_duration"])
+            Config.Notify(Config.Languagues["notify_title"], Config.Languagues["vehicle"], Config.Languagues["error_type"], Config.Languagues["vehicle_notify_duration"])
         else
-            lib.notify({
-                title = Config.Languagues["notify_title"],
-                description = Config.Languagues["vehicle"],
-                type = "error"
-            })
+            if Config.UseLib then
+                lib.notify({
+                    title = Config.Languagues["notify_title"],
+                    description = Config.Languagues["vehicle"],
+                    type = "error"
+                })
+            end
         end
         return
     end
@@ -64,17 +68,19 @@ local function TeleportToFloor(elevatorKey, floor)
         Wait(0)
     end
 
+    Config.Notify(Config.Languagues["notify_title"], Config.Languagues["success"], Config.Languagues["success_type"], Config.Languagues["success_notify_duration"])
+
     TriggerServerEvent("hyper_elevator:Server:Log", elevatorKey, floor.id)
 end
 --#endregion
 
 --#region NUI Callback
 RegisterNUICallback("Confirm", function(data, cb)
-    local elevator = Config.Elevators[currentlyElevatorKey]
+    local elevator = Config.Elevators[currentElevatorKey]
     if elevator then
-        for _, floor in pairs(elevator.id) do
+        for _, floor in pairs(elevator.floors) do
             if floor.id == data.id then
-                TeleportToFloor(currentlyElevatorKey, floor)
+                TeleportToFloor(currentElevatorKey, floor)
                 break
             end
         end
@@ -91,6 +97,10 @@ end)
 --#endregion
 
 --#region Open
+local function Return(elevatorKey)
+    return TriggerServerEvent("hyper_elevator:Server:CanUse", false, elevatorKey)
+end
+
 local function OpenElevator(elevatorKey)
     if isElevatorOpen then return end
 
@@ -98,31 +108,39 @@ local function OpenElevator(elevatorKey)
     if not elevator then return end
 
     if elevator.job then
-        local hasAccess = lib.callback.await("hyper_elevator:Server:CanUse", false, elevatorKey)
+        local hasAccess = nil
+
+        if Config.UseLib then
+            hasAccess = lib.callback.await("hyper_elevator:Server:CanUse", false, elevatorKey)
+        else
+            hasAccess = Return(elevatorKey)
+        end
 
         if not hasAccess then
             if Config.UseCustomNotify then
-                Config.Notify(false, nil, Config.Languagues["notify_title"], Config.Languagues["job"], Config.Languagues["error_type"], Config.Languagues["job_notify_duration"])
+                Config.Notify(Config.Languagues["notify_title"], Config.Languagues["job"], Config.Languagues["error_type"], Config.Languagues["job_notify_duration"])
             else
-                lib.notify({
-                    title = Config.Languagues["notify_title"],
-                    description = Config.Languagues["job"],
-                    type = "error"
-                })
+                if Config.UseLib then
+                    lib.notify({
+                        title = Config.Languagues["notify_title"],
+                        description = Config.Languagues["job"],
+                        type = "error"
+                    })
+                end
             end
             return
         end
     end
 
-    currentlyElevatorKey = elevatorKey
+    currentElevatorKey = elevatorKey
     isElevatorOpen = false
 
     local floorsPayLoad = {}
     for _, floor in pairs(elevator.floors) do
-        floorsPayLoad[#floorsPayLoad + 1] = { id = floor.id, floor.name }
+        floorsPayLoad[#floorsPayLoad + 1] = { id = floor.id, name = floor.name }
     end
 
-    SetNuiFocus(false, false)
+    SetNuiFocus(true, true)
     SendNUIMessage({
         action = "Show",
         info = elevator.info,
@@ -136,15 +154,14 @@ CreateThread(function()
     if not Config.UseTarget then return end
 
     for elevatorKey, elevator in pairs(Config.Elevators) do
-        for _, floor in pairs(elevator.floors) do
-            exports.ox_target:addBoxZone({
-                coords = vector3(floor.x, floor.y, floor.z),
+        exports.ox_target:addBoxZone({
+                coords = vector3(elevator.mainCoords.x, elevator.mainCoords.y, elevator.mainCoords.z),
                 size = vector3(1.5, 1.5, 2),
-                rotation = floor.coords.w,
-                debug = false,
+                rotation = elevator.mainCoords.w,
+                debug = true,
                 options = {
                     {
-                        name = ("hyper_elevator_%s_%s"):format(elevatorKey, floor.id),
+                        name = ("hyper_elevator_%s_%s"):format(elevatorKey, elevator.id),
                         icon = "fas fa-elevator",
                         label = ("Aufzug benutzen (%s)"):format(elevator.label),
                         onSelect = function()
@@ -153,7 +170,6 @@ CreateThread(function()
                     }
                 }
             })
-        end
     end
 end)
 
@@ -164,37 +180,45 @@ CreateThread(function()
         local sleep = 1000
         local ped = PlayerPedId()
         local pedCoords = GetEntityCoords(ped)
-        local closestKey, closestFloorCoords, closestDist = nil, nil, nil
+        local closestKey, closestDist = nil, nil
 
         for elevatorKey, elevator in pairs(Config.Elevators) do
-            for _, floor in pairs(elevator.floors) do
-                local floorCoords = vector3(floor.coords.x, floor.coords.y, floor.coords.z)
-                local dist = #(pedCoords - floorCoords)
+            local main = elevator.mainCoords
+            local mainCoords = vector3(main.x, main.y, main.z)
+            local dist = #(pedCoords - mainCoords)
 
-                if dist < Config.MarkerDrawDistance then
-                    sleep = 0
+            if dist < Config.MarkerDrawDistance then
+                sleep = 0
 
-                    DrawMarker(Config.MarkerType, floorCoords.x, floorCoords.y, floorCoords.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
-                    Config.MarkerSize.x, Config.MarkerSize.y, Config.MarkerSize.z, Config.MarkerColor.r, Config.MarkerColor.g, Config.MarkerColor.b, 100,
-                    Config.UpAndDown, true, 2, false, nil, nil, false)
+                DrawMarker(Config.MarkerType, mainCoords.x, mainCoords.y, mainCoords.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
+                Config.MarkerSize.x, Config.MarkerSize.y, Config.MarkerSize.z, Config.MarkerColor.r, Config.MarkerColor.g, Config.MarkerColor.b, 100,
+                Config.UpAndDown, true, 2, false, nil, nil, false)
 
-                    if not closestDist or dist < closestDist then
-                        closestDist = dist
-                        closestKey = elevatorKey
-                        closestFloorCoords = floorCoords
-                    end
+                if not closestDist or dist < closestDist then
+                    closestDist = dist
+                    closestKey = elevatorKey
                 end
             end
         end
 
         if closestDist and closestDist < Config.InteractionDistance and not isElevatorOpen then
-            lib.showTextUI("[E] Aufgzug benutzen") -- Noch auf ESX oder custom machen lassen
+            if Config.UseLib then
+                lib.showTextUI(Config.Languagues["helpnotificaiton_msg"])
+            else
+                if Config.UseCustomHelpnotification then
+                    Config.HelpNotification()
+                else
+                    ESX.ShowHelpNotification(Config.Languagues["helpnotificaiton_msg"], false, false, 0)
+                end
+            end
 
             if IsControlJustPressed(0, Config.OpenControl) then
                 OpenElevator(closestKey)
             end
         else
-            lib.hideTextUI()
+            if Config.UseLib then
+                lib.hideTextUI()
+            end
         end
         Wait(sleep)
     end

@@ -19,7 +19,7 @@ shared_scripts {
 
 dependcies {
     "ox_lib",
-    "oxmysql",
+    --"oxmysql",
     "ox_target" -- If Config.UseTarget = true
 }
 

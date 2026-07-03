@@ -1,6 +1,24 @@
+---@diagnostic disable: undefined-global
 local ESX = exports['es_extended']:getSharedObject()
 
-lib.callback.register("hyper_elevator:Server:CaUse", function(source, elevatorKey)
+lib.callback.register("hyper_elevator:Server:CanUse", function(source, elevatorKey)
+    local elevator = Config.Elevators[elevatorKey]
+    if not elevator then return end
+
+    if elevator.job then
+        local xPlayer = ESX.GetPlayerFromId(source)
+        if not xPlayer then return false end
+
+        if xPlayer.job.name ~= elevator.job then
+            return false
+        end
+    end
+
+    return true
+end)
+
+RegisterNetEvent("hyper_elevator:Server:CanUse")
+AddEventHandler("hyper_elevator:Server:CanUse", function(source, elevatorKey)
     local elevator = Config.Elevators[elevatorKey]
     if not elevator then return end
 

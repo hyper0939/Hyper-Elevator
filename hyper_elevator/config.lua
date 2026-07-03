@@ -19,34 +19,37 @@ Config.Elevators = {
         info = "Wähle eine Etage aus, um dorthin zu gelangen",
         job = nil, -- "ambulance"
         allowVehicle = false, -- override Config.AllowVehicleTeleport for this Elevator
+        mainCoords = vector4(419.3043, -1635.8181, 29.2919, 90.1318),
 
         floors = {
             {
                 id = 1,
                 name = "Garage",
-                coords = vec4
+                coords = vector4(408.4610, -1630.5187, 29.2919, 43.3527)
             },
             {
                 id = 2,
                 name = "Lobby",
-                coords = vec4
+                coords = vector4(405.7419, -1633.6831, 29.2919, 55.0953)
             },
             {
                 id = 3,
                 name = "Roof",
-                coords = vec4
+                coords = vector(401.2885, -1638.9774, 29.2919, 48.8157)
             },
         }
     },
 }
 
 Config.UseCustomNotify = true -- if true then ox_lib notify 
-Config.Notify = function(server, source, title, message, type, duration)
-    if server then
-        exports["hyper_notify"]:Notify(source, title, message, type, duration)
-    else
-        exports["hyper_notify"]:Notify(title, message, type, duration)
-    end
+Config.Notify = function(title, message, type, duration)
+    exports["hyper_notify"]:Notify(title, message, type, duration)
+end
+
+Config.UseCustomHelpnotification = true -- If false then ESX.ShowHelpNotification(msg, thisFrame, beep, duration)
+Config.UseLib = false -- Notify and textui
+Config.HelpNotification = function()
+    TriggerEvent("revolution_helpnotify:showHelpNotify", Config.Languagues["helpnotificaiton_msg"], "E")
 end
 
 Config.Languagues = {
@@ -55,6 +58,7 @@ Config.Languagues = {
     ["error_type"] = "Error",
     ["warning_type"] = "Warning",
     ["success_type"] = "Success",
+    ["helpnotificaiton_msg"] = "[E] Aufgzug benutzen",
 
     ["dead_notify_duration"] = 4000,
     ["dead"] = "Du kannst als Toter den Aufzug nicht benutzen.",
@@ -64,4 +68,7 @@ Config.Languagues = {
 
     ["job_notify_duration"] = 5000,
     ["job"] = "Du hast kein Zugriff auf diesen Aufzug.",
+
+    ["success_notify_duration"] = 3500,
+    ["success"] = "Du hast dich erfolgreich Teleportiert",
 }

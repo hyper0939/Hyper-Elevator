@@ -7,7 +7,7 @@ $(document).ready(function() {
 
     function CloseUI() {
         Post("Close");
-        $(".container").hide();
+        $(".container").fadeOut(500);
         $(".Bg").empty();
     }
 
@@ -18,7 +18,7 @@ $(document).ready(function() {
             $(".InformationText").text(data.info || "");
             $(".Bg").empty();
 
-            (data.floors || [].forEach(function(floor) {
+            (data.floors || []).forEach(function(floor) {
                 let frame = $(`
                     <div class="Frame" data-id="${floor.id}">
                         <img src="images/ICON.png" class="Icon">
@@ -28,11 +28,12 @@ $(document).ready(function() {
                     </div>`
                 );
                 $(".Bg").append(frame);
-            }));
+            });
 
-            $(".container").show();
+            $(".container").fadeIn(500);
         } else if (data.action == "Hide") {
-            CloseUI();
+            $(".container").fadeOut(500);
+            $(".Bg").empty();
         }
     });
 
