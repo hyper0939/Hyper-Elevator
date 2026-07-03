@@ -13,7 +13,14 @@ server_scripts {
 }
 
 shared_scripts {
+    "@ox_lib/init.lua",
     "config.lua"
+}
+
+dependcies {
+    "ox_lib",
+    "oxmysql",
+    "ox_target" -- If Config.UseTarget = true
 }
 
 ui_page "UI/index.html"
