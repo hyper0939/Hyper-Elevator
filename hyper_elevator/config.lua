@@ -10,12 +10,12 @@ Config.InteractionDistance = 1.5
 Config.MarkerDrawDistance = 10.0
 
 Config.TeleportFadeTime = 500
-Config.TeleportCooldown = 3000 -- 3 Seconds
+Config.TeleportCooldown = 5000 -- 3 Seconds
 Config.MaxTeleportDistance = 5.0 -- The distance between mainCoords - player
 Config.AllowVehicleTeleport = false
 
 Config.EnableBlips = true
-Config.BlipSprite = 372
+Config.BlipSprite = 50
 Config.BlipColor = 3
 Config.BlipScale = 0.8
 
@@ -41,7 +41,7 @@ Config.Elevators = {
             {
                 id = 3,
                 name = "Roof",
-                coords = vector(401.2885, -1638.9774, 29.2919, 48.8157)
+                coords = vector4(401.2885, -1638.9774, 29.2919, 48.8157)
             },
         }
     },
@@ -81,10 +81,12 @@ Config.Languagues = {
     ["teleport_error"] = "Teleport fehlgeschlagen",
     ["teleport_error_duration"] = 4000,
 
+    ["cooldown"] = "Bitte warte kurz, bevor du den Aufzug erneut benutzt.",
+    ["cooldown_notify_duration"] = 3500,
+
     ["elevator_not_found"] = "Aufzug existiert nicht.",
     ["floor_not_found"] = "Etage existiert nicht.",
     ["no_access"] = "Kein Zugriff auf diesen Aufzug.",
-    ["cooldownn"] = "Bitte warte kurz, bevor du den Aufzug erneut benutzt.",
     ["player_not_found"] = "Spieler nicht gefunden.",
     ["distance"] = "Du bist zu weit vom Aufzug entfernt."
 }

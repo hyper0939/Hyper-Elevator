@@ -10,8 +10,6 @@
 - Player cannot move while teleporting
 - No teleporting while the player is dead
 - No teleporting if the vehicle is not allowed
-
-## What can be added:
-- Cooldown between floor changes to prevent spamming.
-- Blip per elevator on the map (can be enabled in the config)
-- Server-side distance check before teleporting as an anti-cheat measure (currently, usage is only logged, not validated)
+- Blips
+- Server-side distance check
+- Cooldown
