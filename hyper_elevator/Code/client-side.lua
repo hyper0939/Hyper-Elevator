@@ -3,9 +3,12 @@ local ESX = exports['es_extended']:getSharedObject()
 
 local isElevatorOpen = false
 local currentElevatorKey = nil
+local isTeleporting = false
 
 --#region Teleport
 local function TeleportToFloor(elevatorKey, floor)
+    if isTeleporting then return end
+
     local ped = PlayerPedId()
     local elevator = Config.Elevators[elevatorKey]
 
@@ -41,6 +44,30 @@ local function TeleportToFloor(elevatorKey, floor)
                 })
             end
         end
+        return
+    end
+
+    isTeleporting = true
+
+    local result = nil
+
+    if Config.UseLib then
+        result = lib.await.callback("hyper_elevator:Server:RequestTeleport", false, elevatorKey, floor.id)
+    else
+        result = TriggerServerEvent("hyper_elevator:Server:RequestTeleport", false, elevatorKey, floor.id)
+    end
+
+    if not result or not result.success then
+        if Config.UseCustomNotify then
+            Config.Notify(Config.Languagues["notify_title"], result and result.reason or Config.Languagues["teleport_error"], Config.Languagues["teleport_error_duration"])
+        else
+            lib.notify({
+                title = Config.Languagues["notify_title"],
+                description = result and result.reason or Config.Languagues["teleport_error"],
+                type = "error"
+            })
+        end
+        isTeleporting = false
         return
     end
 
@@ -148,6 +175,25 @@ local function OpenElevator(elevatorKey)
     })
 end
 --#endregion
+
+--#region Blips
+CreateThread(function()
+    if not Config.EnableBlips then return end
+
+    for elevatorKey, elevator in pairs(Config.Elevators) do
+        local main = elevator.mainCoords
+        local blip = AddBlipForCoord(main.x, main.y, main.z)
+
+        SetBlipSprite(blip, Config.BlipSprite)
+        SetBlipColour(blip, Config.BlipColor)
+        SetBlipScale(blip, Config.BlipScale)
+        SetBlipAsShortRange(blip, true)
+
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString(elevator.label)
+        EndTextCommandSetBlipName(blip)
+    end
+end)
 
 --#region Interaction
 CreateThread(function()

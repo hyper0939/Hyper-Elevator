@@ -1,22 +1,80 @@
 ---@diagnostic disable: undefined-global
 local ESX = exports['es_extended']:getSharedObject()
 
+local playerCooldowns = {}
+
+local function HasJobAccess(source, elevator)
+    if not elevator.job then return true end
+
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return false end
+
+    return xPlayer.job.name == elevator.job
+end
+
+--#region Lib
 lib.callback.register("hyper_elevator:Server:CanUse", function(source, elevatorKey)
     local elevator = Config.Elevators[elevatorKey]
     if not elevator then return end
 
-    if elevator.job then
-        local xPlayer = ESX.GetPlayerFromId(source)
-        if not xPlayer then return false end
+    return HasJobAccess(source, elevator)
+end)
 
-        if xPlayer.job.name ~= elevator.job then
-            return false
+lib.callback.register("hyper_elevator:Server:RequestTeleport", function(source, elevatorKey, floorId)
+    local elevator = Config.Elevators[elevatorKey]
+    if not elevator then
+        return { success = false, reason = Config.Languagues["elevator_not_found"] }
+    end
+
+    local floor = nil
+    for _, f in pairs(elevator.floors) do
+        if f.id == floorId then
+            floor = f
+            break
         end
     end
 
-    return true
+    if not floor then
+        return { success = false, reason = Config.Languagues["floor_not_found"] }
+    end
+
+    if not HasJobAccess(source, elevator) then
+        return { success = false, reson = Config.Languagues["no_access"] }
+    end
+
+    -- Cooldown
+    local now = GetGameTimer()
+    local lastUse = playerCooldowns[source]
+
+    if lastUse and (now- lastUse) < Config.TeleportCooldown then
+        return { success = false, reason = Config.Languagues["cooldownn"] }
+    end
+
+    -- Distance check
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then
+        return { success = false, reason = Config.Languagues["player_not_found"] }
+    end
+
+    local pedCoords = GetEntityCoords(ped)
+    local main = elevator.mainCoords
+    local dist = #(pedCoords - vector3(main.x, main.y, main.z))
+
+    if dist > Config.MaxTeleportDistance then
+        return { success = false, reason = Config.Languagues["distance"] }
+    end
+
+    playerCooldowns[source] = now
+
+    return { success = true }
 end)
 
+AddEventHandler("playerDropped", function()
+    playerCooldowns[source] = nil
+end)
+--#endregion
+
+--#region Events
 RegisterNetEvent("hyper_elevator:Server:CanUse")
 AddEventHandler("hyper_elevator:Server:CanUse", function(source, elevatorKey)
     local elevator = Config.Elevators[elevatorKey]
@@ -33,6 +91,58 @@ AddEventHandler("hyper_elevator:Server:CanUse", function(source, elevatorKey)
 
     return true
 end)
+
+RegisterNetEvent("hyper_elevator:Server:RequestTeleport")
+AddEventHandler("hyper_elevator:Server:RequestTeleport", function(source, elevatorKey, floorId)
+    local elevator = Config.Elevators[elevatorKey]
+    if not elevator then
+        return { success = false, reason = Config.Languagues["elevator_not_found"] }
+    end
+
+    local floor = nil
+    for _, f in pairs(elevator.floors) do
+        if f.id == floorId then
+            floor = f
+            break
+        end
+    end
+
+    if not floor then
+        return { success = false, reason = Config.Languagues["floor_not_found"] }
+    end
+
+    if not HasJobAccess(source, elevator) then
+        return { success = false, reson = Config.Languagues["no_access"] }
+    end
+
+    -- Cooldown
+    local now = GetGameTimer()
+    local lastUse = playerCooldowns[source]
+
+    if lastUse and (now- lastUse) < Config.TeleportCooldown then
+        return { success = false, reason = Config.Languagues["cooldownn"] }
+    end
+
+    -- Distance check
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then
+        return { success = false, reason = Config.Languagues["player_not_found"] }
+    end
+
+    local pedCoords = GetEntityCoords(ped)
+    local main = elevator.mainCoords
+    local dist = #(pedCoords - vector3(main.x, main.y, main.z))
+
+    if dist > Config.MaxTeleportDistance then
+        return { success = false, reason = Config.Languagues["distance"] }
+    end
+
+    playerCooldowns[source] = now
+
+    return { success = true }
+end)
+--#endregion
+
 
 --#region Logging
 RegisterNetEvent("hyper_elevator:Server:Log", function(elevatorKey, floorId)

@@ -10,8 +10,14 @@ Config.InteractionDistance = 1.5
 Config.MarkerDrawDistance = 10.0
 
 Config.TeleportFadeTime = 500
-
+Config.TeleportCooldown = 3000 -- 3 Seconds
+Config.MaxTeleportDistance = 5.0 -- The distance between mainCoords - player
 Config.AllowVehicleTeleport = false
+
+Config.EnableBlips = true
+Config.BlipSprite = 372
+Config.BlipColor = 3
+Config.BlipScale = 0.8
 
 Config.Elevators = {
     ["Pillbox"] = {
@@ -71,4 +77,14 @@ Config.Languagues = {
 
     ["success_notify_duration"] = 3500,
     ["success"] = "Du hast dich erfolgreich Teleportiert",
+
+    ["teleport_error"] = "Teleport fehlgeschlagen",
+    ["teleport_error_duration"] = 4000,
+
+    ["elevator_not_found"] = "Aufzug existiert nicht.",
+    ["floor_not_found"] = "Etage existiert nicht.",
+    ["no_access"] = "Kein Zugriff auf diesen Aufzug.",
+    ["cooldownn"] = "Bitte warte kurz, bevor du den Aufzug erneut benutzt.",
+    ["player_not_found"] = "Spieler nicht gefunden.",
+    ["distance"] = "Du bist zu weit vom Aufzug entfernt."
 }
